@@ -1,0 +1,35 @@
+{% extends "results/base.html" %}
+{% block title %}LGA Summed Result{% endblock %}
+{% block content %}
+<div class="card p-4 mb-4">
+  <h4>Summed Result by Local Government</h4>
+  <p class="text-muted">This totals up every polling unit's result under the chosen LGA directly from <code>announced_pu_results</code> -- it does not read from the pre-announced <code>announced_lga_results</code> table, so it works as an independent check.</p>
+  <form method="get" class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Local Government Area</label>
+      <select class="form-select" name="lga" onchange="this.form.submit()">
+        <option value="">-- Select LGA --</option>
+        {% for l in lgas %}
+          <option value="{{ l.uniqueid }}" {% if selected_lga and selected_lga.uniqueid == l.uniqueid %}selected{% endif %}>{{ l.lga_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+</div>
+
+{% if selected_lga %}
+<div class="card p-4">
+  <h5>Totals for {{ selected_lga.lga_name }}</h5>
+  <table class="table table-striped">
+    <thead><tr><th>Party</th><th>Total Score</th></tr></thead>
+    <tbody>
+      {% for t in totals %}
+        <tr><td>{{ t.party_abbreviation }}</td><td>{{ t.total_score }}</td></tr>
+      {% empty %}
+        <tr><td colspan="2">No results recorded for this LGA yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "results/base.html" %}
+{% block title %}Add New Polling Unit Result{% endblock %}
+{% block content %}
+<div class="card p-4">
+  <h4>Add Result for a New Polling Unit</h4>
+  <p class="text-muted">Choose State &rarr; LGA &rarr; Ward, give the new polling unit a number/name, then enter the score for every party. The polling unit's unique ID is generated automatically.</p>
+
+  <form method="post" class="row g-3">
+    {% csrf_token %}
+    <div class="col-md-4">
+      <label class="form-label">State</label>
+      <select class="form-select" id="state-select">
+        <option value="">-- Select State --</option>
+        {% for s in states %}
+          <option value="{{ s.state_id }}">{{ s.state_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">LGA</label>
+      <select class="form-select" id="lga-select" disabled>
+        <option value="">-- Select LGA --</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Ward</label>
+      <select class="form-select" name="ward" id="ward-select" required disabled>
+        <option value="">-- Select Ward --</option>
+      </select>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Polling Unit Number (e.g. DT1708006)</label>
+      <input type="text" class="form-control" name="pu_number">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Polling Unit Name (optional)</label>
+      <input type="text" class="form-control" name="pu_name">
+    </div>
+
+    <hr class="mt-4">
+    <h5>Scores per party</h5>
+    <div class="row">
+      {% for party in parties %}
+        <div class="col-md-3 mb-2">
+          <label class="form-label">{{ party.partyname }}</label>
+          <input type="number" class="form-control" name="score_{{ party.partyid }}" value="0" min="0">
+        </div>
+      {% empty %}
+        <p class="text-muted">No parties found in the `party` table.</p>
+      {% endfor %}
+    </div>
+
+    <div class="col-12 mt-3">
+      <button type="submit" class="btn btn-primary">Save Polling Unit Result</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const stateSelect = document.getElementById('state-select');
+const lgaSelect = document.getElementById('lga-select');
+const wardSelect = document.getElementById('ward-select');
+
+function resetSelect(select, placeholder) {
+  select.innerHTML = `<option value="">${placeholder}</option>`;
+  select.disabled = true;
+}
+function fillSelect(select, items, valueKey, labelKey) {
+  select.innerHTML = '<option value="">-- Select --</option>';
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item[valueKey];
+    opt.textContent = item[labelKey] || `(unnamed #${item[valueKey]})`;
+    select.appendChild(opt);
+  });
+  select.disabled = false;
+}
+
+stateSelect.addEventListener('change', async () => {
+  resetSelect(lgaSelect, '-- Select LGA --');
+  resetSelect(wardSelect, '-- Select Ward --');
+  if (!stateSelect.value) return;
+  const res = await fetch(`/ajax/lgas/?state_id=${stateSelect.value}`);
+  fillSelect(lgaSelect, await res.json(), 'uniqueid', 'lga_name');
+});
+
+lgaSelect.addEventListener('change', async () => {
+  resetSelect(wardSelect, '-- Select Ward --');
+  if (!lgaSelect.value) return;
+  const res = await fetch(`/ajax/wards/?lga_uniqueid=${lgaSelect.value}`);
+  fillSelect(wardSelect, await res.json(), 'uniqueid', 'ward_name');
+});
+</script>
+{% endblock %}

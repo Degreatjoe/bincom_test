@@ -1,0 +1,113 @@
+{% extends "results/base.html" %}
+{% block title %}Polling Unit Result{% endblock %}
+{% block content %}
+<div class="card p-4 mb-4">
+  <h4>Find a Polling Unit Result</h4>
+  <p class="text-muted">Pick State &rarr; LGA &rarr; Ward &rarr; Polling Unit. Each box fills in as soon as you choose the one before it.</p>
+
+  <form method="get" class="row g-3" id="pu-form">
+    <div class="col-md-3">
+      <label class="form-label">State</label>
+      <select class="form-select" id="state-select">
+        <option value="">-- Select State --</option>
+        {% for s in states %}
+          <option value="{{ s.state_id }}">{{ s.state_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">LGA</label>
+      <select class="form-select" id="lga-select" disabled>
+        <option value="">-- Select LGA --</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Ward</label>
+      <select class="form-select" id="ward-select" disabled>
+        <option value="">-- Select Ward --</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Polling Unit</label>
+      <select class="form-select" name="polling_unit" id="pu-select" disabled>
+        <option value="">-- Select Polling Unit --</option>
+      </select>
+    </div>
+  </form>
+</div>
+
+{% if polling_unit %}
+<div class="card p-4">
+  <h5>Result for {{ polling_unit.polling_unit_name|default:"(unnamed polling unit)" }} (Unique ID: {{ polling_unit.uniqueid }})</h5>
+  <p class="text-muted mb-3">
+    {% if ward %}Ward: {{ ward.ward_name }} | {% endif %}
+    {% if lga %}LGA: {{ lga.lga_name }}{% endif %}
+  </p>
+  <table class="table table-striped">
+    <thead><tr><th>Party</th><th>Score</th></tr></thead>
+    <tbody>
+      {% for r in results %}
+        <tr><td>{{ r.party_abbreviation }}</td><td>{{ r.party_score }}</td></tr>
+      {% empty %}
+        <tr><td colspan="2">No results recorded for this polling unit yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif request.GET.polling_unit %}
+<div class="alert alert-warning">Polling unit not found.</div>
+{% endif %}
+
+<script>
+const stateSelect = document.getElementById('state-select');
+const lgaSelect = document.getElementById('lga-select');
+const wardSelect = document.getElementById('ward-select');
+const puSelect = document.getElementById('pu-select');
+
+function resetSelect(select, placeholder) {
+  select.innerHTML = `<option value="">${placeholder}</option>`;
+  select.disabled = true;
+}
+
+function fillSelect(select, items, valueKey, labelKey) {
+  select.innerHTML = '<option value="">-- Select --</option>';
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item[valueKey];
+    opt.textContent = item[labelKey] || `(unnamed #${item[valueKey]})`;
+    select.appendChild(opt);
+  });
+  select.disabled = false;
+}
+
+stateSelect.addEventListener('change', async () => {
+  resetSelect(lgaSelect, '-- Select LGA --');
+  resetSelect(wardSelect, '-- Select Ward --');
+  resetSelect(puSelect, '-- Select Polling Unit --');
+  if (!stateSelect.value) return;
+  const res = await fetch(`/ajax/lgas/?state_id=${stateSelect.value}`);
+  fillSelect(lgaSelect, await res.json(), 'uniqueid', 'lga_name');
+});
+
+lgaSelect.addEventListener('change', async () => {
+  resetSelect(wardSelect, '-- Select Ward --');
+  resetSelect(puSelect, '-- Select Polling Unit --');
+  if (!lgaSelect.value) return;
+  const res = await fetch(`/ajax/wards/?lga_uniqueid=${lgaSelect.value}`);
+  fillSelect(wardSelect, await res.json(), 'uniqueid', 'ward_name');
+});
+
+wardSelect.addEventListener('change', async () => {
+  resetSelect(puSelect, '-- Select Polling Unit --');
+  if (!wardSelect.value) return;
+  const res = await fetch(`/ajax/polling-units/?ward_uniqueid=${wardSelect.value}`);
+  fillSelect(puSelect, await res.json(), 'uniqueid', 'polling_unit_name');
+});
+
+puSelect.addEventListener('change', () => {
+  if (puSelect.value) {
+    document.getElementById('pu-form').submit();
+  }
+});
+</script>
+{% endblock %}
