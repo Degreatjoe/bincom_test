@@ -22,10 +22,10 @@ mysql -u bincomuser -p bincomphptest < bincom_test.sql
 Set your DB credentials as environment variables (or edit `project/settings.py` directly):
 
 ```bash
-export DB_NAME=bincomphptest
-export DB_USER=bincomuser
-export DB_PASSWORD=YourStrongPassword
-export DB_HOST=127.0.0.1
+export DB_NAME=freedb_b6t7oaFg
+export DB_USER=u_gLWJr5
+export DB_PASSWORD=cRcQcsi2ioYD
+export DB_HOST=sql.freedb.tech
 export DB_PORT=3306
 ```
 
